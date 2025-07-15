@@ -1,0 +1,168 @@
+version: '3.8'
+
+services:
+  # MinIO - S3 Compatible Object Storage
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z # Use a specific stable release
+    container_name: minio
+    ports:
+      - "9000:9000" # API and Console
+      - "9001:9001" # Browser UI
+    volumes:
+      - D:\Docker\minio\data:/data # Persistent storage for MinIO data
+      - D:\Docker\minio\config:/root/.minio # Persistent storage for MinIO config
+    environment:
+      MINIO_ROOT_USER: admin_dev # Change this in production!
+      MINIO_ROOT_PASSWORD: 1q2w3E4r@* # Change this in production!
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001 # Optional: For browser access
+    command: server /data --console-address ":9001"
+    restart: always # Ensure MinIO restarts automatically
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # MongoDB - NoSQL Database
+  mongodb:
+    image: mongo:6.0 # Use a specific stable release for production
+    container_name: mongodb
+    ports:
+      - "27017:27017" # Default MongoDB port
+    volumes:
+      - D:\Docker\mongodb\data:/data/db # Persistent storage for MongoDB data
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin_dev # Change this in production!
+      MONGO_INITDB_ROOT_PASSWORD: 1q2w3E4r@* # Change this in production!
+    restart: always # Ensure MongoDB restarts automatically
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s # Give MongoDB time to start
+
+  # RabbitMQ - Message Broker
+  rabbitmq:
+    image: rabbitmq:3.13-management # Include management plugin for UI
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" # AMQP protocol port
+      - "15672:15672" # Management UI port
+    volumes:
+      - D:\Docker\rabbitmq\data:/var/lib/rabbitmq # Persistent storage for RabbitMQ data
+      - D:\Docker\rabbitmq\log:/var/log/rabbitmq # Persistent storage for RabbitMQ logs
+    environment:
+      RABBITMQ_DEFAULT_USER: admin_dev # Change this in production!
+      RABBITMQ_DEFAULT_PASS: 1q2w3E4r@* # Change this in production!
+    restart: always # Ensure RabbitMQ restarts automatically
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      
+  # PostgreSQL
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin_dev
+      POSTGRES_PASSWORD: 1q2w3E4r@*
+      TZ: ${TZ}
+    ports:
+      - '5432:5432'
+    volumes:
+      - D:\Docker\postgres\data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  
+  # Elasticsearch  
+  elasticsearch:
+    image: elasticsearch:7.17.9
+    container_name: elasticsearch
+    restart: always
+    environment:
+      discovery.type: single-node
+      xpack.monitoring.enabled: "true"
+      xpack.watcher.enabled: "false"
+      TZ: Asia/Ho_Chi_Minh
+      ES_JAVA_OPTS: -Xms2g -Xmx2g
+      bootstrap.memory_lock: "true"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - D:\Docker\elasticsearch\data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Kibana
+  kibana:
+    image: kibana:7.17.9
+    container_name: kibana
+    restart: always
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      TZ: Asia/Ho_Chi_Minh
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5601/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      
+  # Jaeger
+  jaeger:
+    image: jaegertracing/all-in-one
+    container_name: jaeger
+    restart: always
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "5775:5775/udp"
+      - "5778:5778"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "9411:9411"
+      - "14268:14268"
+      - "16686:16686"
+      - "4317:4317"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - D:\Docker\redis\data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  minio_data:
+  minio_config:
+  mongodb_data:
+  rabbitmq_data:
+  rabbitmq_log:
