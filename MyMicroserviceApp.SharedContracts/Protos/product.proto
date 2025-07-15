@@ -1,0 +1,32 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "MyMicroserviceApp.SharedContracts"; // Quan trọng: Đặt namespace dùng chung
+
+package products;
+
+service ProductService {
+  rpc GetProducts (GetProductsRequest) returns (GetProductsResponse);
+  rpc GetProductById (GetProductByIdRequest) returns (ProductResponse);
+}
+
+message GetProductsRequest {}
+
+message GetProductByIdRequest {
+  string productId = 1;
+}
+
+message ProductResponse {
+  Product product = 1;
+}
+
+message GetProductsResponse {
+  repeated Product products = 1;
+}
+
+message Product {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  int32 stock = 5;
+}

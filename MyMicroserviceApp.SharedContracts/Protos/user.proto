@@ -1,0 +1,31 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "MyMicroserviceApp.SharedContracts"; // Quan trọng: Đặt namespace dùng chung
+
+package users;
+
+service UserService {
+  rpc GetUsers (GetUsersRequest) returns (GetUsersResponse);
+  rpc GetUserById (GetUserByIdRequest) returns (UserResponse);
+}
+
+message GetUsersRequest {}
+
+message GetUserByIdRequest {
+  string userId = 1;
+}
+
+message UserResponse {
+  User user = 1;
+}
+
+message GetUsersResponse {
+  repeated User users = 1;
+}
+
+message User {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  string address = 4;
+}
