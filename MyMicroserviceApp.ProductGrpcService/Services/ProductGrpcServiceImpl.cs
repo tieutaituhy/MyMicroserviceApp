@@ -53,5 +53,29 @@ namespace MyMicroserviceApp.ProductGrpcService.Services
                 }
             };
         }
+
+        public override async Task<ProductResponse> CreateProduct(CreateProductRequest request, ServerCallContext context)
+        {
+            _logger.LogInformation($"Creating product: {request.Name}");
+            var product = new MyMicroserviceApp.ProductGrpcService.Models.Product()
+            {
+                Name = request.Name,
+                Description = request.Description,
+                Price = (decimal)request.Price,
+                Stock = request.Stock
+            };
+            await _productDbService.CreateAsync(product);
+            return new ProductResponse
+            {
+                Product = new SharedContracts.Product
+                {
+                    Id = product.Id,
+                    Name = product.Name,
+                    Description = product.Description,
+                    Price = (double)product.Price,
+                    Stock = product.Stock
+                }
+            };
+        }
     }
 }

@@ -73,5 +73,28 @@ namespace MyMicroserviceApp.ApiGateway.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Status.Detail}");
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateProduct([FromBody] MyMicroserviceApp.SharedContracts.Product product)
+        {
+            _logger.LogInformation($"Gateway received request to create product: {product.Name}");
+            try
+            {
+                var request = new CreateProductRequest
+                {
+                    Name = product.Name,
+                    Description = product.Description,
+                    Price = product.Price,
+                    Stock = product.Stock
+                };
+                var response = await _productClient.CreateProductAsync(request);
+                return CreatedAtAction(nameof(GetProductById), new { id = response.Product.Id }, response.Product);
+            }
+            catch (Grpc.Core.RpcException ex)
+            {
+                _logger.LogError(ex, "Error calling Product gRPC service.");
+                return StatusCode(500, $"Internal server error: {ex.Status.Detail}");
+            }
+        }
     }
 }
